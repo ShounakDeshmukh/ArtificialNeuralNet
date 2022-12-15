@@ -11,12 +11,14 @@ fn main() {
         (mnist_loader::Mnist_array, mnist_loader::Mnist_array),
     ) = mnist_loader::load();
     let mut x_train: Matrix = x_train.into_dimensionality::<Ix2>().unwrap();
+    let mut y_train: Matrix = y_train.into_dimensionality::<Ix2>().unwrap();
     x_train = x_train.reversed_axes(); //Transpose
 
-    print!("{:?}", x_train);
     // print!("{:?}",x_train.slice(s!(..,0)).shape())
+    // println!("{:?}", y_train);
     let ((W1, B1), (W2, B2)): ((Matrix, Matrix), (Matrix, Matrix)) = init_weights();
-    forward_propogation(W1, B1, W2, B2, x_train);
+
+    // forward_propogation(W1, B1, W2, B2, x_train);
 }
 
 fn init_weights() -> ((Matrix, Matrix), (Matrix, Matrix)) {
@@ -52,22 +54,41 @@ fn ReLU(mut Z: Matrix) -> Matrix {
     return Z;
 }
 
+fn ReLU_Derivative(mut Z: Matrix) -> Matrix {
+    for element in Z.iter_mut() {
+        if element > &mut 0.0 {
+            *element = 1.0;
+        } else {
+            continue;
+        }
+    }
+    Z
+}
+
 fn softmax(mut Z: Matrix) -> Matrix {
     for column_num in 0..Z.ncols() {
         let exp_Z_sum: f32 = Z.clone().column(column_num).iter().map(|x| x.exp()).sum();
-        println!("{}", exp_Z_sum);
+        // println!("{}", exp_Z_sum);
 
         for element in Z.column_mut(column_num) {
             *element = element.exp() / exp_Z_sum;
         }
     }
 
-    // println!();
-
-    println!();
-    print!("{:?}", Z);
-
     return Z;
+}
+fn one_hot_encode(y_train: Matrix) -> Matrix {
+    let mut one_hot_y: Matrix = Array2::zeros((y_train.shape()[0], 10));
+
+    println!("{:?}", one_hot_y.shape());
+    // (60,000;10)
+
+    for (index, element) in y_train.indexed_iter() {
+        one_hot_y[[index.0, *element as usize]] = 1.0
+    }
+    print!("{:?}", one_hot_y);
+
+    one_hot_y.reversed_axes() //Return transposed matrix
 }
 
 fn forward_propogation(
@@ -83,4 +104,31 @@ fn forward_propogation(
     let A2: Matrix = softmax(Z2.clone());
 
     return ((Z1, A1), (Z2, A2));
+}
+
+fn back_propogation(Z1: Matrix, A1: Matrix, Z2: Matrix, A2: Matrix, W2: Matrix, y_train: Matrix) {
+    let n: f32 = y_train.shape()[0] as f32;
+    // n=60000
+    let one_hot_y: Matrix = one_hot_encode(y_train);
+    let difference_pred_actual: Matrix = A2 - one_hot_y;
+
+    let delta_W2: Matrix = (1.0 / n) * difference_pred_actual.dot(&A1.reversed_axes());
+
+    let delta_B2: Matrix = (1.0 / n)
+        * difference_pred_actual
+            .sum_axis(Axis(2))
+            .into_dimensionality::<Ix2>()
+            .unwrap();
+
+    let delta_Z1: Matrix = W2.reversed_axes().dot(&difference_pred_actual) * ReLU_Derivative(Z1);
+    //Element wise multiply
+
+    let delta_W1: Matrix = (1.0 / n) * difference_pred_actual.dot(&A2.reversed_axes());
+
+    let delta_B1: Matrix = (1.0 / n)
+        * difference_pred_actual
+            .sum_axis(Axis(2))
+            .into_dimensionality::<Ix2>()
+            .unwrap();
+
 }
