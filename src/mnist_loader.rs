@@ -4,7 +4,7 @@ use std::io;
 use std::io::Read;
 use std::path::Path;
 
-type NdArray = ndarray::Array<f32, ndarray::IxDyn>;
+pub type Mnist_array = ndarray::Array<f32, ndarray::IxDyn>;
 
 /// load mnist dataset as "ndarray" objects.
 ///
@@ -12,7 +12,7 @@ type NdArray = ndarray::Array<f32, ndarray::IxDyn>;
 ///
 /// Shape of x_train and x_test: (num_samples, 28)
 /// Shape of y_train and y_test: (num_samples, 1)
-pub fn load() -> ((NdArray, NdArray), (NdArray, NdArray)) {
+pub fn load() -> ((Mnist_array, Mnist_array), (Mnist_array, Mnist_array)) {
     // load dataset as `Vec`s
     let (train_x, num_image_train): (Vec<f32>, usize) =
         load_images("mnist/train-images-idx3-ubyte");
@@ -24,7 +24,7 @@ pub fn load() -> ((NdArray, NdArray), (NdArray, NdArray)) {
         load_labels("mnist/t10k-labels-idx1-ubyte");
 
     // Vec to ndarray
-    let as_arr = NdArray::from_shape_vec;
+    let as_arr = Mnist_array::from_shape_vec;
     let x_train = as_arr(ndarray::IxDyn(&[num_image_train, 28 * 28]), train_x).unwrap();
     let y_train = as_arr(ndarray::IxDyn(&[num_label_train, 1]), train_y).unwrap();
     let x_test = as_arr(ndarray::IxDyn(&[num_image_test, 28 * 28]), test_x).unwrap();
