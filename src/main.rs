@@ -22,19 +22,19 @@ fn main() {
 }
 
 fn init_weights() -> ((Matrix, Matrix), (Matrix, Matrix)) {
-    let mut W1: Matrix = ndarray::Array2::random((10, 784), Uniform::new(-1.0, 0.5));
+    let W1: Matrix = ndarray::Array2::random((10, 784), Uniform::new(-1.0, 0.5));
 
     print!("{:?}", W1);
     println!();
 
-    let mut B1: Matrix = ndarray::Array2::random((10, 1), Uniform::new(-1.0, 0.5));
+    let B1: Matrix = ndarray::Array2::random((10, 1), Uniform::new(-1.0, 0.5));
 
     // print!("{:?}", B1);
 
-    let mut W2: Matrix = ndarray::Array2::random((10, 10), Uniform::new(-1.0, 0.5));
+    let W2: Matrix = ndarray::Array2::random((10, 10), Uniform::new(-1.0, 0.5));
     // print!("{:?}", W2);
 
-    let mut B2: Matrix = ndarray::Array2::random((10, 1), Uniform::new(-1.0, 0.5));
+    let B2: Matrix = ndarray::Array2::random((10, 1), Uniform::new(-1.0, 0.5));
 
     // print!("{:?}", B2);
 
@@ -106,7 +106,14 @@ fn forward_propogation(
     return ((Z1, A1), (Z2, A2));
 }
 
-fn back_propogation(Z1: Matrix, A1: Matrix, Z2: Matrix, A2: Matrix, W2: Matrix, y_train: Matrix) {
+fn back_propogation(
+    Z1: Matrix,
+    A1: Matrix,
+    A2: Matrix,
+    W2: Matrix,
+    x_train: Matrix,
+    y_train: Matrix,
+) -> ((Matrix, Matrix), (Matrix, Matrix)) {
     let n: f32 = y_train.shape()[0] as f32;
     // n=60000
     let one_hot_y: Matrix = one_hot_encode(y_train);
@@ -123,12 +130,34 @@ fn back_propogation(Z1: Matrix, A1: Matrix, Z2: Matrix, A2: Matrix, W2: Matrix, 
     let delta_Z1: Matrix = W2.reversed_axes().dot(&difference_pred_actual) * ReLU_Derivative(Z1);
     //Element wise multiply
 
-    let delta_W1: Matrix = (1.0 / n) * difference_pred_actual.dot(&A2.reversed_axes());
+    let delta_W1: Matrix = (1.0 / n) * difference_pred_actual.dot(&x_train.reversed_axes());
 
     let delta_B1: Matrix = (1.0 / n)
-        * difference_pred_actual
+        * delta_Z1
             .sum_axis(Axis(2))
             .into_dimensionality::<Ix2>()
             .unwrap();
 
+    return ((delta_W1, delta_B1), (delta_W2, delta_B2));
 }
+
+fn update_weights_biases(
+    delta_W1: Matrix,
+    delta_B1: Matrix,
+    delta_W2: Matrix,
+    delta_B2: Matrix,
+    W1: Matrix,
+    B1: Matrix,
+    W2: Matrix,
+    B2: Matrix,
+    Learning_rate: f32,
+) -> ((Matrix, Matrix), (Matrix, Matrix)) {
+    let W1: Matrix = W1 - Learning_rate * delta_W1;
+    let B1: Matrix = B1 - Learning_rate * delta_B1;
+    let W2: Matrix = W2 - Learning_rate * delta_W2;
+    let B2: Matrix = B2 - Learning_rate * delta_B2;
+
+    ((W1, B1), (W2, B2))
+}
+
+fn Training() {}
