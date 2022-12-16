@@ -6,19 +6,43 @@ pub mod mnist_loader;
 type Matrix = ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>;
 
 fn main() {
-    let ((x_train, mut y_train), (mut x_test, mut y_test)): (
+    let ((x_train, y_train), (x_test, y_test)): (
         (mnist_loader::Mnist_array, mnist_loader::Mnist_array),
         (mnist_loader::Mnist_array, mnist_loader::Mnist_array),
     ) = mnist_loader::load();
     let mut x_train: Matrix = x_train.into_dimensionality::<Ix2>().unwrap();
-    let mut y_train: Matrix = y_train.into_dimensionality::<Ix2>().unwrap();
+    let y_train: Matrix = y_train.into_dimensionality::<Ix2>().unwrap();
+
     x_train = x_train.reversed_axes(); //Transpose
 
-    // print!("{:?}",x_train.slice(s!(..,0)).shape())
-    // println!("{:?}", y_train);
-    let ((W1, B1), (W2, B2)): ((Matrix, Matrix), (Matrix, Matrix)) = init_weights();
+    let ((mut W1, mut B1), (mut W2, mut B2)): ((Matrix, Matrix), (Matrix, Matrix));
+    let ((mut Z1, mut A1), (mut Z2, mut A2)): ((Matrix, Matrix), (Matrix, Matrix));
+    let ((mut delta_W1, mut delta_B1), (mut delta_W2, mut delta_B2)): (
+        (Matrix, Matrix),
+        (Matrix, Matrix),
+    );
 
-    // forward_propogation(W1, B1, W2, B2, x_train);
+    ((W1, B1), (W2, B2)) = init_weights();
+    for iteration in 0..2 {
+        ((Z1, A1), (Z2, A2)) = forward_propogation(
+            W1.clone(),
+            B1.clone(),
+            W2.clone(),
+            B2.clone(),
+            x_train.clone(),
+        );
+
+        ((delta_W1, delta_B1), (delta_W2, delta_B2)) =
+            back_propogation(Z1, A1, A2, W2.clone(), x_train.clone(), y_train.clone());
+
+        ((W1, B1), (W2, B2)) = update_weights_biases(
+            delta_W1, delta_B1, delta_W2, delta_B2, W1, B1, W2, B2, 0.001,
+        );
+
+        println!("{:?}", W1);
+        println!("{:?}", W2);
+        println!("Iteration: {}", iteration);
+    }
 }
 
 fn init_weights() -> ((Matrix, Matrix), (Matrix, Matrix)) {
